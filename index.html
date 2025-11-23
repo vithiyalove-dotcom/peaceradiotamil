@@ -4,19 +4,19 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Peace FM Tamil - Live Radio</title>
-  
+
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#6A1B9A">
   <link rel="apple-touch-icon" href="/icon-192.png">
   <meta name="description" content="Peace FM Tamil - Live Tamil Radio Streaming">
-  
+
   <link rel="stylesheet" href="/styles.css">
 </head>
 <body>
   <main class="wrap">
     <header class="topbar">
       <div class="brand">
-        <img src="icon-192.png" alt="Peace FM Logo" class="logo">
+        <img src="/icon-192.png" alt="Peace FM Logo" class="logo">
         <h1>Peace FM Tamil</h1>
       </div>
       <p class="tag">Live Tamil Radio — Peace Radio</p>
@@ -24,12 +24,13 @@
 
     <section class="player">
       <div class="cover">
-        <img src="icon-512.png" alt="Peace FM Cover">
+        <img src="/icon-512.png" alt="Peace FM Cover">
       </div>
 
       <div class="controls">
+        <!-- Set audio src to your worker's stream endpoint (example below uses proxied worker root) -->
         <audio id="radio" preload="none" crossorigin="anonymous">
-          <source src="https://morning-hall-b6c5.vithiyalove.workers.dev/" type="audio/mpeg">
+          <source id="radioSource" src="https://morning-hall-b6c5.vithiyalove.workers.dev/" type="audio/mpeg">
           உங்கள் உலாவி ஆடியோவை ஆதரிக்கவில்லை.
         </audio>
 
@@ -44,14 +45,14 @@
 
         <div id="status" class="status">Offline</div>
         <div id="loading" class="loading" style="display: none;">
-          <div class="spinner"></div>
+          <div class="spinner" aria-hidden="true"></div>
           <span>இணைக்கிறது...</span>
         </div>
 
         <div class="meta">
           <div class="song-info">
             <span class="label">இப்போது ஒலிக்கிறது:</span>
-            <div id="songTitle" class="song-title">—</div>
+            <div id="songTitle" class="song-title">Peace Radio Tamil</div>
           </div>
           <div id="listeners" class="listeners">கேட்போர்: —</div>
         </div>
@@ -62,7 +63,7 @@
       <div class="prompt-content">
         <p>📱 Peace FM-ஐ உங்கள் ஹோம் ஸ்கிரீனில் சேர்க்கவும்!</p>
         <button id="installBtn" class="btn-install">இன்ஸ்டால் செய்</button>
-        <button id="dismissBtn" class="btn-dismiss">×</button>
+        <button id="dismissBtn" class="btn-dismiss" aria-label="Dismiss">×</button>
       </div>
     </section>
 
@@ -71,6 +72,6 @@
     </footer>
   </main>
 
-  <script src="/app.js"></script>
+  <script src="/app.js" defer></script>
 </body>
 </html>
