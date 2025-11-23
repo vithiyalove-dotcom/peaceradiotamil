@@ -1,84 +1,149 @@
-export default {
-  async fetch(request) {
-    const url = "http://sapircast.caster.fm:16574/ZE9eu";
+// DOM Elements
+const audio = document.getElementById('radio');
+const playBtn = document.getElementById('playBtn');
+const stopBtn = document.getElementById('stopBtn');
+const status = document.getElementById('status');
+const loading = document.getElementById('loading');
+const songTitle = document.getElementById('songTitle');
+const listeners = document.getElementById('listeners');
+const installPrompt = document.getElementById('installPrompt');
+const installBtn = document.getElementById('installBtn');
+const dismissBtn = document.getElementById('dismissBtn');
 
-    const response = await fetch(url, {
-      headers: {
-        "Icy-MetaData": "1",
-        "Accept": "*/*",
-      }
-    });
+let deferredPrompt;
 
-    return new Response(response.body, {
-      headers: {
-        "Content-Type": "audio/mpeg",
-        "Access-Control-Allow-Origin": "*"
-      }
-    });
+// Status Management
+function setStatus(state, message) {
+  status.className = 'status';
+  if (state === 'live') {
+    status.classList.add('live');
+    status.textContent = 'Live';
+  } else if (state === 'error') {
+    status.classList.add('error');
+    status.textContent = message || 'Error';
+  } else {
+    status.textContent = 'Offline';
   }
 }
 
-const CACHE = 'peacefm-v1';
-const FILES = [
-  '/',
-  '/index.html',
-  '/styles.css',
-  '/manifest.json',
-  '/icon-192.png',
-  '/icon-512.png'
-];
+function showLoading(show) {
+  loading.style.display = show ? 'flex' : 'none';
+}
 
-self.addEventListener('install', ev => {
-  ev.waitUntil(
-    caches.open(CACHE).then(cache => cache.addAll(FILES))
-  );
-  self.skipWaiting();
-});
-
-self.addEventListener('activate', ev => {
-  ev.waitUntil(self.clients.claim());
-});
-
-self.addEventListener('fetch', ev => {
-  ev.respondWith(
-    caches.match(ev.request).then(res => res || fetch(ev.request))
-  );
-});
-
-const CACHE_NAME = "peacefm-cache-v1";
-const URLS_TO_CACHE = [
-  "/",
-  "/index.html",
-  "/styles.css",
-  "/manifest.json",
-  "/icon-192.png",
-  "/icon-512.png"
-];
-
-self.addEventListener("install", event => {
-  event.waitUntil(
-    caches.open(CACHE_NAME).then(cache => {
-      return cache.addAll(URLS_TO_CACHE);
-    })
-  );
-});
-
-self.addEventListener('fetch', event => {
-  const url = event.request.url;
-
-  // 🔥 CLOUDLFARE STREAM URL வந்து விட்டா - CACHE செய்யக்கூடாது!
-  if (url.includes('vithiyalove.workers.dev')) {
-    event.respondWith(fetch(event.request));  // direct fetch
-    return;
+// Play Button Handler
+playBtn.addEventListener('click', async () => {
+  try {
+    showLoading(true);
+    playBtn.disabled = true;
+    
+    await audio.play();
+    
+    setStatus('live');
+    showLoading(false);
+    playBtn.disabled = false;
+    
+    // Update Media Session
+    if ('mediaSession' in navigator) {
+      navigator.mediaSession.metadata = new MediaMetadata({
+        title: 'Peace FM Tamil',
+        artist: 'Live Radio',
+        album: 'Peace Radio',
+        artwork: [
+          { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: 'icon-512.png', sizes: '512x512', type: 'image/png' }
+        ]
+      });
+    }
+    
+  } catch (err) {
+    console.error('Playback error:', err);
+    showLoading(false);
+    playBtn.disabled = false;
+    
+    if (err.name === 'NotAllowedError') {
+      alert('தயவுசெய்து Play பட்டனை மீண்டும் கிளிக் செய்யவும். உலாவி autoplay-ஐ தடுத்துள்ளது.');
+    } else {
+      setStatus('error', 'பிழை');
+      alert('ஸ்ட்ரீம் இணைக்க முடியவில்லை. இணைய இணைப்பை சரிபார்க்கவும்.');
+    }
   }
-
-  // Static files = normal caching
-  event.respondWith(
-    caches.match(event.request).then(response => {
-      return response || fetch(event.request);
-    })
-  );
 });
 
+// Stop Button Handler
+stopBtn.addEventListener('click', () => {
+  audio.pause();
+  audio.currentTime = 0;
+  setStatus('offline');
+  songTitle.textContent = '—';
+  listeners.textContent = 'கேட்போர்: —';
+});
 
+// Audio Event Listeners
+audio.addEventListener('playing', () => {
+  setStatus('live');
+  showLoading(false);
+});
 
+audio.addEventListener('waiting', () => {
+  showLoading(true);
+});
+
+audio.addEventListener('error', (e) => {
+  console.error('Audio error:', e);
+  setStatus('error', 'இணைப்பு பிழை');
+  showLoading(false);
+  playBtn.disabled = false;
+});
+
+audio.addEventListener('pause', () => {
+  if (audio.currentTime === 0) {
+    setStatus('offline');
+  }
+});
+
+// PWA Install Prompt
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  deferredPrompt = e;
+  installPrompt.style.display = 'block';
+});
+
+installBtn.addEventListener('click', async () => {
+  if (!deferredPrompt) return;
+  
+  deferredPrompt.prompt();
+  const { outcome } = await deferredPrompt.userChoice;
+  
+  console.log(`Install outcome: ${outcome}`);
+  deferredPrompt = null;
+  installPrompt.style.display = 'none';
+});
+
+dismissBtn.addEventListener('click', () => {
+  installPrompt.style.display = 'none';
+  localStorage.setItem('installDismissed', 'true');
+});
+
+// Check if already dismissed
+if (localStorage.getItem('installDismissed') === 'true') {
+  installPrompt.style.display = 'none';
+}
+
+// Service Worker Registration
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('/service-worker.js')
+      .then(reg => console.log('Service Worker registered:', reg.scope))
+      .catch(err => console.error('Service Worker registration failed:', err));
+  });
+}
+
+// Optional: Metadata Polling (if server supports)
+// This is a placeholder - implement based on your backend
+function fetchMetadata() {
+  // Implement metadata fetching from your streaming server
+  // Example: fetch current song info, listener count, etc.
+}
+
+// Poll metadata every 10 seconds
+setInterval(fetchMetadata, 10000);
