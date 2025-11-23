@@ -1,3 +1,23 @@
+export default {
+  async fetch(request) {
+    const url = "http://sapircast.caster.fm:16574/ZE9eu";
+
+    const response = await fetch(url, {
+      headers: {
+        "Icy-MetaData": "1",
+        "Accept": "*/*",
+      }
+    });
+
+    return new Response(response.body, {
+      headers: {
+        "Content-Type": "audio/mpeg",
+        "Access-Control-Allow-Origin": "*"
+      }
+    });
+  }
+}
+
 const CACHE = 'peacefm-v1';
 const FILES = [
   '/',
@@ -59,5 +79,6 @@ self.addEventListener('fetch', event => {
     })
   );
 });
+
 
 
