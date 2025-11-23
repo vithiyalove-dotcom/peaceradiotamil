@@ -1,0 +1,35 @@
+{
+  "name": "Peace FM Tamil",
+  "short_name": "PeaceFM",
+  "description": "Official PWA for Peace FM Tamil - Online streaming",
+  "start_url": ".",
+  "display": "standalone",
+  "background_color": "#0f0f12",
+  "theme_color": "#6A1B9A",
+  "icons":[
+    { "src": "/icon-192.png", "sizes":"192x192", "type":"image/png" },
+    { "src": "/icon-512.png", "sizes":"512x512", "type":"image/png" }
+  ]
+}
+
+{
+  "name": "Peace FM Tamil",
+  "short_name": "Peace FM",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#6A1B9A",
+  "theme_color": "#6A1B9A",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

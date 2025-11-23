@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="ta">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Peace FM Tamil</title>
+
+  <link rel="manifest" href="/manifest.json" />
+  <meta name="theme-color" content="#6A1B9A" />
+  <link rel="apple-touch-icon" href="/icon-192.png">
+
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="wrap">
+    <header class="topbar">
+      <div class="brand">
+        <img src="/icon-192.png" alt="logo" class="logo">
+        <h1>Peace FM Tamil</h1>
+      </div>
+      <p class="tag">Live Tamil Radio — Peace Radio</p>
+    </header>
+
+    <section class="player">
+      <div class="cover">
+        <img src="/icon-512.png" alt="cover">
+      </div>
+
+      <div class="controls">
+        <audio id="radio" preload="none" crossorigin="anonymous">
+          <!-- HTTP stream (may be blocked when page served via HTTPS) -->
+          <source src="http://sapircast.caster.fm:16574/ZE9eu" type="audio/mpeg">
+          Your browser does not support the audio element.
+        </audio>
+
+        <button id="playBtn" class="btn play">Play</button>
+        <button id="stopBtn" class="btn stop">Stop</button>
+        <div id="status" class="status">Offline</div>
+
+        <div class="meta">
+          <div id="songTitle">—</div>
+          <div id="listeners">Listeners: —</div>
+        </div>
+      </div>
+    </section>
+
+    <footer class="foot">
+      <small>Peace FM Tamil • Add to Home Screen to install</small>
+    </footer>
+  </main>
+
+  <script>
+    const audio = document.getElementById('radio');
+    const playBtn = document.getElementById('playBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const status = document.getElementById('status');
+
+    function setOnline(state){
+      status.textContent = state ? 'Live' : 'Offline';
+      status.className = state ? 'status live' : 'status';
+    }
+
+    playBtn.addEventListener('click', async () => {
+      try {
+        await audio.play();
+        setOnline(true);
+      } catch (err){
+        console.error('autoplay blocked or error', err);
+        alert('Browser blocked autoplay — tap Play again or allow site audio.');
+      }
+    });
+
+    stopBtn.addEventListener('click', () => {
+      audio.pause();
+      audio.currentTime = 0;
+      setOnline(false);
+    });
+
+    // Optional: update metadata if server sends it (not implemented here)
+    // Also show basic network errors:
+    audio.addEventListener('error', (e) => {
+      console.error('audio error', e);
+      setOnline(false);
+    });
+
+    // Register SW for offline (if supported)
+    if ('serviceWorker' in navigator){
+      navigator.serviceWorker.register('/service-worker.js').catch(e => console.log(e));
+    }
+  </script>
+</body>
+</html>
