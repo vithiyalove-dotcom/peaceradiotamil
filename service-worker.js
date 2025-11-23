@@ -1,5 +1,8 @@
+// app.js - browser logic (DOM, playback, metadata, PWA prompt, SW register)
+
 // DOM Elements
 const audio = document.getElementById('radio');
+const radioSource = document.getElementById('radioSource');
 const playBtn = document.getElementById('playBtn');
 const stopBtn = document.getElementById('stopBtn');
 const status = document.getElementById('status');
@@ -12,15 +15,17 @@ const dismissBtn = document.getElementById('dismissBtn');
 
 let deferredPrompt;
 
-// Status Management
+// Helper: set status
 function setStatus(state, message) {
   status.className = 'status';
   if (state === 'live') {
     status.classList.add('live');
-    status.textContent = 'Live';
+    status.textContent = 'Live 🔴';
   } else if (state === 'error') {
     status.classList.add('error');
     status.textContent = message || 'Error';
+  } else if (state === 'offline') {
+    status.textContent = 'Offline';
   } else {
     status.textContent = 'Offline';
   }
@@ -30,38 +35,44 @@ function showLoading(show) {
   loading.style.display = show ? 'flex' : 'none';
 }
 
-// Play Button Handler
+// PLAY handler
 playBtn.addEventListener('click', async () => {
+  playBtn.disabled = true;
+  showLoading(true);
+
   try {
-    showLoading(true);
-    playBtn.disabled = true;
-    
+    // Attempt to play. If autoplay blocked, browser will throw NotAllowedError
     await audio.play();
-    
     setStatus('live');
     showLoading(false);
     playBtn.disabled = false;
-    
-    // Update Media Session
+
+    // fetch metadata immediately
+    fetchMetadata();
+
+    // Setup media session if available
     if ('mediaSession' in navigator) {
       navigator.mediaSession.metadata = new MediaMetadata({
-        title: 'Peace FM Tamil',
-        artist: 'Live Radio',
+        title: songTitle.textContent || 'Peace FM Tamil',
+        artist: 'Peace Radio',
         album: 'Peace Radio',
         artwork: [
-          { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
-          { src: 'icon-512.png', sizes: '512x512', type: 'image/png' }
+          { src: '/icon-192.png', sizes: '192x192', type: 'image/png' },
+          { src: '/icon-512.png', sizes: '512x512', type: 'image/png' }
         ]
       });
+
+      navigator.mediaSession.setActionHandler('play', async () => { await audio.play(); });
+      navigator.mediaSession.setActionHandler('pause', () => { audio.pause(); });
     }
-    
+
   } catch (err) {
     console.error('Playback error:', err);
     showLoading(false);
     playBtn.disabled = false;
-    
+
     if (err.name === 'NotAllowedError') {
-      alert('தயவுசெய்து Play பட்டனை மீண்டும் கிளிக் செய்யவும். உலாவி autoplay-ஐ தடுத்துள்ளது.');
+      alert('உலாவி autoplay-ஐ தடுத்துள்ளது — Play பட்டனை மீண்டும் அழுத்தவும்.');
     } else {
       setStatus('error', 'பிழை');
       alert('ஸ்ட்ரீம் இணைக்க முடியவில்லை. இணைய இணைப்பை சரிபார்க்கவும்.');
@@ -69,16 +80,19 @@ playBtn.addEventListener('click', async () => {
   }
 });
 
-// Stop Button Handler
+// STOP handler - DO NOT set currentTime for live streams
 stopBtn.addEventListener('click', () => {
-  audio.pause();
-  audio.currentTime = 0;
+  try {
+    audio.pause();
+  } catch (e) {
+    console.warn('Error while pausing:', e);
+  }
   setStatus('offline');
-  songTitle.textContent = '—';
+  songTitle.textContent = 'Peace Radio Tamil';
   listeners.textContent = 'கேட்போர்: —';
 });
 
-// Audio Event Listeners
+// Audio event listeners
 audio.addEventListener('playing', () => {
   setStatus('live');
   showLoading(false);
@@ -96,25 +110,64 @@ audio.addEventListener('error', (e) => {
 });
 
 audio.addEventListener('pause', () => {
-  if (audio.currentTime === 0) {
-    setStatus('offline');
-  }
+  // if paused manually keep offline label
+  if (audio.paused) setStatus('offline');
 });
 
-// PWA Install Prompt
+// Robust metadata fetch
+async function fetchMetadata() {
+  const statusUrl = '/api/status'; // proxied endpoint on worker
+  try {
+    const res = await fetch(statusUrl, { cache: 'no-store' });
+    if (!res.ok) throw new Error('Status fetch failed');
+
+    const data = await res.json();
+    // different icecast formats: try to find icestats.source or sources
+    let source = null;
+    if (data.icestats) {
+      source = data.icestats.source || data.icestats;
+    } else if (data.icestats && data.icestats.source) {
+      source = data.icestats.source;
+    } else {
+      // fallback: maybe direct object or array
+      source = data.source || data;
+    }
+
+    if (Array.isArray(source)) source = source[0];
+
+    if (source) {
+      if (source.title) songTitle.textContent = source.title;
+      else if (source.server_name) songTitle.textContent = source.server_name;
+
+      if (typeof source.listeners !== 'undefined') {
+        listeners.textContent = `கேட்போர்: ${source.listeners}`;
+      }
+    }
+  } catch (err) {
+    console.log('Metadata fetch error:', err);
+    // leave defaults if failed
+  }
+}
+
+// Poll metadata every 15s while playing
+setInterval(() => {
+  if (!audio.paused) fetchMetadata();
+}, 15000);
+
+// PWA install prompt handling
 window.addEventListener('beforeinstallprompt', (e) => {
   e.preventDefault();
   deferredPrompt = e;
-  installPrompt.style.display = 'block';
+  if (localStorage.getItem('installDismissed') !== 'true') {
+    installPrompt.style.display = 'block';
+  }
 });
 
 installBtn.addEventListener('click', async () => {
   if (!deferredPrompt) return;
-  
   deferredPrompt.prompt();
   const { outcome } = await deferredPrompt.userChoice;
-  
-  console.log(`Install outcome: ${outcome}`);
+  console.log('Install outcome:', outcome);
   deferredPrompt = null;
   installPrompt.style.display = 'none';
 });
@@ -124,12 +177,7 @@ dismissBtn.addEventListener('click', () => {
   localStorage.setItem('installDismissed', 'true');
 });
 
-// Check if already dismissed
-if (localStorage.getItem('installDismissed') === 'true') {
-  installPrompt.style.display = 'none';
-}
-
-// Service Worker Registration
+// Service Worker registration (ensure sw file at root)
 if ('serviceWorker' in navigator) {
   window.addEventListener('load', () => {
     navigator.serviceWorker.register('/service-worker.js')
@@ -138,12 +186,15 @@ if ('serviceWorker' in navigator) {
   });
 }
 
-// Optional: Metadata Polling (if server supports)
-// This is a placeholder - implement based on your backend
-function fetchMetadata() {
-  // Implement metadata fetching from your streaming server
-  // Example: fetch current song info, listener count, etc.
+// Optional: quickly check stream reachable (non-blocking)
+async function quickHealthCheck() {
+  try {
+    const res = await fetch('/api/status', { cache: 'no-store' });
+    if (res.ok) {
+      // nothing else; metadata fetch will update UI
+    }
+  } catch (e) {
+    console.warn('Health check failed:', e);
+  }
 }
-
-// Poll metadata every 10 seconds
-setInterval(fetchMetadata, 10000);
+quickHealthCheck();
