@@ -43,10 +43,21 @@ self.addEventListener("install", event => {
   );
 });
 
-self.addEventListener("fetch", event => {
+self.addEventListener('fetch', event => {
+  const url = event.request.url;
+
+  // 🔥 CLOUDLFARE STREAM URL வந்து விட்டா - CACHE செய்யக்கூடாது!
+  if (url.includes('vithiyalove.workers.dev')) {
+    event.respondWith(fetch(event.request));  // direct fetch
+    return;
+  }
+
+  // Static files = normal caching
   event.respondWith(
     caches.match(event.request).then(response => {
       return response || fetch(event.request);
     })
   );
 });
+
+
