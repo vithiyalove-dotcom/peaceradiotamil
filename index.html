@@ -4,14 +4,15 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Peace FM Tamil - Live Radio</title>
-  
+
   <link rel="manifest" href="/manifest.json">
   <meta name="theme-color" content="#6A1B9A">
   <link rel="apple-touch-icon" href="/icon-192.png">
   <meta name="description" content="Peace FM Tamil - Live Tamil Radio Streaming">
-  
+
   <link rel="stylesheet" href="/styles.css">
 </head>
+
 <body>
   <main class="wrap">
     <header class="topbar">
@@ -27,42 +28,26 @@
         <img src="icon-512.png" alt="Peace FM Cover">
       </div>
 
-      <div class="controls">
-        <audio id="radio" preload="none" crossorigin="anonymous">
-          <source src="https://morning-hall-b6c5.vithiyalove.workers.dev/" type="audio/mpeg">
-          உங்கள் உலாவி ஆடியோவை ஆதரிக்கவில்லை.
-        </audio>
-
-        <div class="button-group">
-          <button id="playBtn" class="btn play">
-            <span class="icon">▶</span> Play
-          </button>
-          <button id="stopBtn" class="btn stop">
-            <span class="icon">■</span> Stop
-          </button>
-        </div>
-
-        <div id="status" class="status">Offline</div>
-        <div id="loading" class="loading" style="display: none;">
-          <div class="spinner"></div>
-          <span>இணைக்கிறது...</span>
-        </div>
-
-        <div class="meta">
-          <div class="song-info">
-            <span class="label">இப்போது ஒலிக்கிறது:</span>
-            <div id="songTitle" class="song-title">—</div>
-          </div>
-          <div id="listeners" class="listeners">கேட்போர்: —</div>
-        </div>
+      <!-- 🔥 LIVE CASTER.FM PLAYER (WORKING) -->
+      <div data-type="newStreamPlayer"
+           data-publicToken="f18f72fd-31f8-4f8a-8d13-be2bf026a39a"
+           data-theme="light"
+           data-color="e81e4d"
+           class="cstrEmbed">
+        <a href="https://www.caster.fm">Shoutcast Hosting</a>
       </div>
-    </section>
 
-    <section class="install-prompt" id="installPrompt" style="display: none;">
-      <div class="prompt-content">
-        <p>📱 Peace FM-ஐ உங்கள் ஹோம் ஸ்கிரீனில் சேர்க்கவும்!</p>
-        <button id="installBtn" class="btn-install">இன்ஸ்டால் செய்</button>
-        <button id="dismissBtn" class="btn-dismiss">×</button>
+      <!-- Widget Script -->
+      <script src="https://cdn.cloud.caster.fm/widgets/embed.js"></script>
+
+      <div id="status" class="status">Streaming via Caster.fm</div>
+
+      <div class="meta">
+        <div class="song-info">
+          <span class="label">இப்போது ஒலிக்கிறது:</span>
+          <div id="songTitle" class="song-title">—</div>
+        </div>
+        <div id="listeners" class="listeners">கேட்போர்: —</div>
       </div>
     </section>
 
